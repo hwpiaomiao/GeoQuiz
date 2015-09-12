@@ -1,8 +1,7 @@
 package com.example.geoquiz;
 
-
-
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -12,26 +11,28 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class QuizActivity extends Activity {
-	private Button mTrueButton;
+
+	private boolean mIsCheater;
+	private Button mCheatButton;
+	private static final String KEY_INDEX = "index";
+	private static final String KEY_IS_CHEATER="cheater";
+	private Button mTrueButton;;
 	private Button mFalseButton;
 	private ImageButton mNextButton;
 	private ImageButton mPreButton;
-	//private TextView mQuestionTextView;
 	private int mCurrentIndex = 0;
-	
+
 	private TextView mTextView;
 
 	private TrueFalse[] mQuestionBank = new TrueFalse[] { 
-			new TrueFalse(R.string.question_oceans, true),
-			new TrueFalse(R.string.question_mideast, false), 
-			new TrueFalse(R.string.question_africa, false),
-			new TrueFalse(R.string.question_americas, true), 
-			new TrueFalse(R.string.question_asia, true), 
-			};
+			new TrueFalse(R.string.question_1, true),
+			new TrueFalse(R.string.question_2, false),
+			new TrueFalse(R.string.question_3, false),
+			new TrueFalse(R.string.question_4, true),
+			new TrueFalse(R.string.question_5, true), };
 
 	private void updataQuestion() {
 		int question = mQuestionBank[mCurrentIndex].getQuestion();
-		//mQuestionTextView.setText(question);
 		mTextView.setText(question);
 	}
 
@@ -39,32 +40,65 @@ public class QuizActivity extends Activity {
 		boolean answerIsTrue = mQuestionBank[mCurrentIndex].isTrueQuestion();
 
 		int messageResId = 0;
-		if (usePressedTrue == answerIsTrue) {
-			messageResId = R.string.correct_toast;
+		if (mIsCheater) {
+			messageResId = R.string.judgment_toast;
 		} else {
-			messageResId = R.string.incorrect_toast;
+			if (usePressedTrue == answerIsTrue) {
+				messageResId = R.string.correct_toast;
+			} else {
+				messageResId = R.string.incorrect_toast;
+			}
 		}
 		Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (data == null) {
+			return;
+		}
+		mIsCheater = data.getBooleanExtra(CheatActivity.EXTRA_ANSWER_SHOWN, false);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt(KEY_INDEX, mCurrentIndex);
+		outState.putBoolean(KEY_IS_CHEATER, mIsCheater);
 	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		mTextView=(TextView) findViewById(R.id.question_text_view);
+
+		mCheatButton = (Button) findViewById(R.id.cheat_button);
+		mCheatButton.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				Intent i = new Intent(QuizActivity.this, CheatActivity.class);
+				boolean answerIsTrue = mQuestionBank[mCurrentIndex].isTrueQuestion();
+				i.putExtra(CheatActivity.EXTRA_ANSWER_IS_TRUE, answerIsTrue);
+				startActivityForResult(i, 0);
+			}
+		});
+		if (savedInstanceState != null) {
+			mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+			mIsCheater=savedInstanceState.getBoolean(KEY_IS_CHEATER, false);
+
+		}
+		mTextView = (TextView) findViewById(R.id.question_text_view);
 		mTextView.setOnClickListener(new OnClickListener() {
-			
+
 			@Override
 			public void onClick(View v) {
 				mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
 				updataQuestion();
-				
+
 			}
 		});
-		
 
-		//mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
 		mTrueButton = (Button) findViewById(R.id.true_button);
 		mTrueButton.setOnClickListener(new OnClickListener() {
 
@@ -88,26 +122,28 @@ public class QuizActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+				mIsCheater=false;
 				updataQuestion();
+				
+				
 			}
 		});
-		
-		mPreButton=(ImageButton) findViewById(R.id.pre_button);
+
+		mPreButton = (ImageButton) findViewById(R.id.pre_button);
 		mPreButton.setOnClickListener(new OnClickListener() {
-			
+
 			@Override
 			public void onClick(View v) {
-				if (mCurrentIndex==0) {
-					mCurrentIndex=mQuestionBank.length-1;
-					
-				}else {
+				if (mCurrentIndex == 0) {
+					mCurrentIndex = mQuestionBank.length - 1;
+
+				} else {
 					mCurrentIndex = (mCurrentIndex - 1) % mQuestionBank.length;
 				}
 				updataQuestion();
 			}
 		});
 		updataQuestion();
-
 	}
 
 }
